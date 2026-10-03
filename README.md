@@ -80,6 +80,12 @@ with the schema built by running the Alembic migrations — so a migration that
 has drifted from the models fails the suite. Each test runs in a transaction
 that is rolled back afterwards.
 
+CI runs on every push (`.github/workflows/ci.yml`), in three jobs: the API
+suite against a real Postgres, a type-check and build of the frontend, and a
+clean-clone `docker compose up` that waits for `/api/health` to report ok.
+That last job runs on a different architecture and libc to the machine this
+was developed on, which is the class of breakage a local build cannot catch.
+
 The suite concentrates on the rules that would actually hurt if they broke:
 
 | File | Covers |

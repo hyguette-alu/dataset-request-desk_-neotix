@@ -1,0 +1,111 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+
+    # The suite runs against a real Postgres rather than SQLite, because it
+    # relies on enums, partial indexes, ON CONFLICT and percentile_cont.
+    services:
+      db:
+        image: postgres:16
+        env:
+          POSTGRES_USER: drd
+          POSTGRES_PASSWORD: drd
+          POSTGRES_DB: drd
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U drd -d drd"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    defaults:
+      run:
+        working-directory: api
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: api/requirements*.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
+
+      - name: Run tests
+        # conftest creates drd_test and applies the Alembic migrations, so a
+        # migration that has drifted from the models fails the build here.
+        run: pytest -q
+        env:
+          DATABASE_URL: postgresql+psycopg://drd:drd@localhost:5432/drd_test
+          JWT_SECRET: ci-only-secret
+          # Absolute paths so the importer test runs against the real messy
+          # export instead of skipping itself.
+          SEED_USERS_PATH: ${{ github.workspace }}/seed/users.json
+          SEED_EPISODES_PATH: ${{ github.workspace }}/seed/episodes.csv
+
+  web:
+    name: Frontend build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Type-check and build
+        run: npm run build
+
+  stack:
+    name: Clean-clone startup
+    runs-on: ubuntu-latest
+
+    # The requirement this guards is "docker compose up brings up the whole
+    # system from a clean clone". It runs on a different architecture and a
+    # different libc to the machine this was written on, which is exactly the
+    # class of breakage a local build cannot catch.
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start the stack
+        run: docker compose up -d --build
+
+      - name: Wait for the API to report healthy
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fsS http://localhost:3000/api/health | grep -q '"status":"ok"'; then
+              echo "healthy after ${i}s"; exit 0
+            fi
+            sleep 1
+          done
+          echo "API never became healthy"; docker compose logs; exit 1
+
+      - name: Check the SPA is served and seed data imported
+        run: |
+          curl -fsS -o /dev/null http://localhost:3000/
+          docker compose exec -T db psql -U drd -d drd -tAc \
+            "select count(*) from episodes" | grep -qE '^[0-9]+$'
+
+      - name: Tear down
+        if: always()
+        run: docker compose down -v

@@ -125,7 +125,9 @@ This is the first thing I would confirm with whoever owns that export.
 
 Deliberately not built:
 
-- **No stretch item.** See section 6 for the honest reason.
+- **No stretch item.** I chose to spend the remaining time on the required
+  work and on CI instead. Of the three, background jobs is the one I would
+  pick; it is item 3 below.
 - **No password reset or self-service account changes.** An admin can create
   an account and set its initial password, but nobody can change their own
   password and an admin cannot reset someone else's. Email is immutable too,
@@ -155,7 +157,8 @@ With two more days, in order:
    most about this domain — a real export pipeline is where idempotency and
    retries actually bite.
 4. **Soft-delete assignments** and show the full attachment history.
-5. **CI**, running the test suite on every push.
+5. **Widen CI** to run the importer against a generated 200k-row file, so a
+   performance regression shows up as a failed build rather than a surprise.
 
 ---
 
