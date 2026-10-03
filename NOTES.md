@@ -305,3 +305,33 @@ than the table. Three other things break first:
 What would *not* need to change: the schema, the constraints, and the fact
 that aggregation happens in Postgres.
 
+---
+
+## 6. AI tooling
+
+I used **Claude Code** (Anthropic's CLI) throughout.
+
+The decisions this document defends are mine: the stack, the schema shape,
+treating episode ids case-insensitively, last-row-wins on a contradicting
+duplicate, 404 rather than 403 for another client's resource, and storing the
+current status alongside an append-only history. It wrote most of the
+first-draft code from those decisions, and effectively all of the
+boilerplate — Dockerfiles, nginx config, the React forms and tables.
+
+Where it earned its place: enumerating every defect in the 190-row
+`seed/episodes.csv`. Finding them by hand is exactly the work worth
+delegating; deciding what each one should do is not, and the decision table
+in section 1 is where I spent that time instead.
+
+Where I overrode it: it first proposed a React SPA holding the token in
+`localStorage` with CORS between two origins. I replaced that with the
+same-origin nginx setup and an HttpOnly cookie, which is why there is no CORS
+configuration in this project. It also suggested Postgres' `xmax = 0` trick
+to distinguish inserts from updates in the importer's `RETURNING` clause; I
+rejected it as clever rather than clear and used an explicit per-batch
+`SELECT`, which also yields the `unchanged` count the report needs.
+
+So this is AI-assisted code rather than code I typed line by line. I have
+read all of it, and `services/importer.py` is the file I would most like to
+be asked about.
+
