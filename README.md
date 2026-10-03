@@ -90,6 +90,7 @@ The suite concentrates on the rules that would actually hurt if they broke:
 | `tests/test_import.py` | idempotency on re-import, every cleaning rule, every rejection reason |
 | `tests/test_analytics.py` | grouping, inclusive date boundaries, median interpolation |
 | `tests/test_auth.py` | login, password hashing, token forgery, deactivation |
+| `tests/test_users.py` | only admins manage accounts; role changes take effect at once; an admin cannot lock everyone out |
 
 ---
 
@@ -182,6 +183,9 @@ not in the UI.
 | `GET` | `/api/episodes` | operator, admin |
 | `POST` | `/api/episodes/import` | operator, admin |
 | `GET` | `/api/analytics?from=&to=` | operator, admin |
+| `GET` | `/api/users` | admin |
+| `POST` | `/api/users` | admin |
+| `PATCH` | `/api/users/{id}` | admin |
 | `GET` | `/api/health` | anyone |
 
 Authentication accepts either transport: the browser uses an HttpOnly

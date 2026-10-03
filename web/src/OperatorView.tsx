@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import AdminUsers from "./AdminUsers";
 import { ApiError, api } from "./api";
 import { ErrorBanner, STATUS_LABELS, StatusBadge, formatDate, formatDateTime } from "./common";
 import type { DatasetRequest, Episode, Quality, RequestDetail, User } from "./types";
@@ -94,6 +95,10 @@ export default function OperatorView({ user }: { user: User }) {
       {openId !== null && (
         <OperatorRequestPanel key={openId} requestId={openId} onChanged={reload} />
       )}
+
+      {/* Admins do everything an operator does, plus manage accounts. */}
+      {user.role === "admin" && <AdminUsers currentUser={user} />}
+
       <p className="muted">Signed in as {user.email}</p>
     </main>
   );

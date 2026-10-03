@@ -32,6 +32,36 @@ class UserOut(BaseModel):
 
 
 # --------------------------------------------------------------------------
+# User administration (admin only)
+# --------------------------------------------------------------------------
+
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    name: str = Field(min_length=1, max_length=200)
+    role: Role
+    # Minimum length is a floor, not a policy. A real deployment needs a
+    # proper password policy; see NOTES.md.
+    password: str = Field(min_length=8, max_length=MAX_PASSWORD_BYTES)
+    organisation: str | None = Field(default=None, max_length=200)
+
+
+class UserUpdate(BaseModel):
+    """Every field optional: this is a PATCH.
+
+    Email and password are deliberately not changeable here. Rotating a
+    password is the account holder's business, not an admin's, and changing
+    an email silently changes who can log in to an account that already owns
+    requests.
+    """
+
+    name: str | None = Field(default=None, min_length=1, max_length=200)
+    role: Role | None = None
+    is_active: bool | None = None
+    organisation: str | None = Field(default=None, max_length=200)
+
+
+# --------------------------------------------------------------------------
 # Requests
 # --------------------------------------------------------------------------
 

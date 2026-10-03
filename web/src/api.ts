@@ -5,6 +5,7 @@ import type {
   Quality,
   RequestDetail,
   RequestStatus,
+  Role,
   User,
 } from "./types";
 
@@ -117,5 +118,26 @@ export const api = {
   unassignEpisode: (id: number, episodeId: string) =>
     request<void>(`/api/requests/${id}/assignments/${episodeId}`, {
       method: "DELETE",
+    }),
+
+  // Admin only. The server enforces that; these just fail with 403 otherwise.
+  listUsers: () => request<User[]>("/api/users"),
+
+  createUser: (payload: {
+    email: string;
+    name: string;
+    role: Role;
+    password: string;
+    organisation?: string;
+  }) =>
+    request<User>("/api/users", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  updateUser: (id: number, payload: { role?: Role; is_active?: boolean }) =>
+    request<User>(`/api/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
     }),
 };

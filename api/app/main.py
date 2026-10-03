@@ -13,7 +13,7 @@ from app.logging_setup import configure_logging, safe_extra
 
 configure_logging(settings.log_level)
 
-from app.routers import analytics, auth, episodes, requests  # noqa: E402
+from app.routers import analytics, auth, episodes, requests, users  # noqa: E402
 
 logger = logging.getLogger("app")
 access_logger = logging.getLogger("app.access")
@@ -124,6 +124,7 @@ def create_app() -> FastAPI:
     app.include_router(requests.router)
     app.include_router(episodes.router)
     app.include_router(analytics.router)
+    app.include_router(users.router)
 
     return app
 

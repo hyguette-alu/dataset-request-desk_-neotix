@@ -20,6 +20,13 @@ users ──< requests ──< assignments >── episodes >── robots
 | `assignments` | an episode attached to a request; `UNIQUE(episode_id)` |
 | `import_runs` | one row per CSV import, with its report as JSONB |
 
+Accounts are deactivated, never deleted. `users.id` is referenced by
+`requests.client_id` and `request_status_events.actor_id` with ON DELETE
+RESTRICT, so deleting a user would either orphan requests or rewrite history
+that is supposed to be immutable. Two guards stop an admin creating a
+one-way door: you cannot deactivate or demote your own account, and the last
+active admin cannot be removed by anyone.
+
 ### Where state lives
 
 All of it is in Postgres. There is no cache, no queue and no in-process state,
@@ -119,11 +126,12 @@ This is the first thing I would confirm with whoever owns that export.
 Deliberately not built:
 
 - **No stretch item.** See section 6 for the honest reason.
-- **No user management UI.** The brief gives admins create/deactivate/change
-  role. The model supports it (`is_active` is checked on every request, so
-  deactivation takes effect immediately rather than when the token expires),
-  but there is no endpoint or screen. It was the least interesting required
-  thing and the first I cut.
+- **No password reset or self-service account changes.** An admin can create
+  an account and set its initial password, but nobody can change their own
+  password and an admin cannot reset someone else's. Email is immutable too,
+  because changing it silently changes who can log into an account that
+  already owns requests. A real deployment needs a reset flow with an
+  expiring token; this one does not have one.
 - **No assignment history.** `assignments` models the *current* attachment
   only; unassigning deletes the row. Who removed an episode and when is not
   recoverable. For an internal tool at this stage that is acceptable; it would
@@ -138,7 +146,8 @@ Deliberately not built:
 
 With two more days, in order:
 
-1. **Admin user management**, since it is in the brief and is an afternoon.
+1. **A password reset flow**, which is the obvious hole left in user
+   management.
 2. **Replace stateless JWTs with server-side sessions.** Logout that does not
    actually log you out is the kind of thing that looks fine until it is in
    a security review.
