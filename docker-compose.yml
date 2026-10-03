@@ -1,3 +1,7 @@
+# Pinned so the project name — and therefore the generated image names — does
+# not depend on what the clone directory happens to be called.
+name: dataset-request-desk
+
 services:
   db:
     image: postgres:16

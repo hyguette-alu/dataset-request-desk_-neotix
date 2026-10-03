@@ -14,6 +14,12 @@ node_modules/
 web/dist/
 *.tsbuildinfo
 
+# Not committed on purpose: npm prunes platform-specific optional dependencies
+# (rollup's native binary) from the lockfile, so a lockfile generated on one
+# OS/libc breaks `npm ci` on another and the Docker build fails. Direct
+# dependencies are pinned to exact versions in web/package.json instead.
+package-lock.json
+
 .DS_Store
 .idea/
 .vscode/

@@ -4,11 +4,13 @@ FROM node:22-alpine AS build
 
 WORKDIR /app
 
-COPY package.json package-lock.json* ./
-# `npm ci` when a lockfile is committed (reproducible), `npm install` as a
-# fallback so a fresh clone without one still builds.
+COPY package.json ./
+# `npm install` rather than `npm ci` against a committed lockfile: npm prunes
+# platform-specific optional dependencies (rollup's native binary) from the
+# lockfile, so a lockfile generated on one OS/libc fails to build on another.
+# Direct dependencies are pinned to exact versions in package.json instead.
 RUN --mount=type=cache,target=/root/.npm \
-    if [ -f package-lock.json ]; then npm ci; else npm install; fi
+    npm install --no-audit --no-fund
 
 COPY . .
 RUN npm run build
