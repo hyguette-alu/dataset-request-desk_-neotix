@@ -1,0 +1,55 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: drd
+      POSTGRES_PASSWORD: drd
+      POSTGRES_DB: drd
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      # Exposed only so you can inspect the database with psql from the host.
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U drd -d drd"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build: ./api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://drd:drd@db:5432/drd
+      JWT_SECRET: dev-secret-change-me
+      SEED_USERS_PATH: /seed/users.json
+      SEED_EPISODES_PATH: /seed/episodes.csv
+      ENVIRONMENT: development
+      LOG_LEVEL: INFO
+    volumes:
+      - ./seed:/seed:ro
+      # Bind mount + --reload is a development convenience. See NOTES.md for
+      # what a production compose file would do instead.
+      - ./api:/app
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: ./web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      # The one URL to open. nginx serves the SPA and proxies /api to the
+      # api service, so everything is same-origin.
+      - "3000:80"
+
+volumes:
+  pgdata:
